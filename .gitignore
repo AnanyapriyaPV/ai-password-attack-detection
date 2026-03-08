@@ -1,5 +1,8 @@
+<<<<<<< HEAD
 rockyou.txt
 
+=======
+>>>>>>> 4cead13c7a722dcd74b631c3dbd653896b4769ed
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
