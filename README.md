@@ -1,4 +1,4 @@
-# AI-Driven Framework for Detecting and Preventing Password-Based Attacks
+# AI-Driven Framework for Detecting Password-Based Attacks
 
 ## Project Overview
 
