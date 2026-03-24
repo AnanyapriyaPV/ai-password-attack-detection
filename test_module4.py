@@ -1,32 +1,50 @@
-print("Running Module 4...")
+print("Running Integrated System...")
 
-import random
 from adaptive_decision.decision_engine import adaptive_decision
 from adaptive_decision.slow_attack_detector import detect_slow_attack
 from adaptive_decision.monitoring_logger import log_event
 
-user_id = "user123"
+# Import ML pipeline
+from risk_prediction.main_pipeline import output
 
-for i in range(8):
+# ---------------------------
+# GET ML OUTPUT
+# ---------------------------
 
-    risk_score = random.uniform(0, 1)
+user_id = output["user_id"]
+risk_score = output["risk_score"]
 
-    decision = adaptive_decision(risk_score)
+# ---------------------------
+# ADAPTIVE DECISION
+# ---------------------------
 
-    slow_attack = detect_slow_attack(user_id)
+decision = adaptive_decision(risk_score)
 
-    event = {
-        "attempt": i+1,
-        "user_id": user_id,
-        "risk_score": round(risk_score, 2),
-        "decision": decision,
-        "slow_attack_detected": slow_attack
-    }
+# ---------------------------
+# SLOW ATTACK DETECTION
+# ---------------------------
 
-    log_event(event)
+slow_attack = detect_slow_attack(user_id)
 
-    print("Attempt:", i+1)
-    print("Risk Score:", round(risk_score, 2))
-    print("Decision:", decision)
-    print("Slow Attack:", slow_attack)
-    print("-" * 30)
+# ---------------------------
+# LOG EVENT
+# ---------------------------
+
+event = {
+    "user_id": user_id,
+    "risk_score": round(risk_score, 2),
+    "decision": decision,
+    "slow_attack_detected": slow_attack
+}
+
+log_event(event)
+
+# ---------------------------
+# PRINT OUTPUT
+# ---------------------------
+
+print("\n--- FINAL DECISION ---")
+print("User:", user_id)
+print("Risk Score:", round(risk_score, 2))
+print("Decision:", decision)
+print("Slow Attack:", slow_attack)

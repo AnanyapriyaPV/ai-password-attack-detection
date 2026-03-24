@@ -16,7 +16,7 @@ def extract_features(csv_path="dataset.csv"):
         "vulnerability_score",
         "time_gap",
         "rolling_attempts",
-        "dictionary_flag",
+        "dictionary_flag"
     ]
 
     X = df[feature_columns]
