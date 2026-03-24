@@ -10,7 +10,6 @@ from risk_prediction.predict_risk import load_model
 from auth.vulnerability import calculate_entropy
 
 from adaptive_decision.decision_engine import adaptive_decision
-from adaptive_decision.slow_attack_detector import detect_slow_attack
 from adaptive_decision.monitoring_logger import log_event
 
 
@@ -42,7 +41,10 @@ wordlist = load_rockyou("rockyou.txt", limit=10000)
 model = load_model()
 simulator = AttackSimulator(users, wordlist)
 
-# Store history per user
+# ----------------------------
+# HISTORY STORAGE
+# ----------------------------
+
 login_history = {u.user_id: deque(maxlen=10) for u in users}
 rolling_window = {u.user_id: deque(maxlen=5) for u in users}
 
@@ -57,20 +59,17 @@ print("2 → Attack Simulation")
 
 mode = input("Enter choice: ")
 
+events = []
 
 # ----------------------------
 # AUTHENTICATION
 # ----------------------------
-
-events = []
 
 if mode == "1":
 
     user = random.choice(users)
     password = user.password
     attack_type = "legitimate"
-
-    print(f"\nUser: {user.user_id}")
 
     auth_result = authenticate_login(user, password)
     events = [(user, password, auth_result)]
@@ -87,7 +86,7 @@ elif mode == "2":
     attack_choice = input("Enter choice: ")
 
     if attack_choice == "1":
-        simulator.run_dictionary_attack(count=3)
+        simulator.run_dictionary_attack(count=5)
         attack_type = "dictionary"
 
     elif attack_choice == "2":
@@ -122,111 +121,120 @@ else:
 
 
 # ----------------------------
-# FEATURE ENGINEERING
+# PROCESS EVENTS
 # ----------------------------
 
-current_time = time.time()
+base_time = time.time()
 
-user = events[-1][0]
-password = events[-1][1]
-auth_result = events[-1][2]
+for user, password, auth_result in events:
 
-# ----------------------------
-# RELATIVE TIME GAP (KEY FIX)
-# ----------------------------
+    # ----------------------------
+    # SIMULATED TIME GAP (KEY FIX)
+    # ----------------------------
 
-login_history[user.user_id].append(current_time)
+    if attack_type == "rapid_burst":
+        gap = random.uniform(0.01, 0.05)
 
-times = list(login_history[user.user_id])
+    elif attack_type == "low_and_slow":
+        gap = random.uniform(2, 5)
 
-if len(times) >= 2:
-    gaps = [times[i] - times[i-1] for i in range(1, len(times))]
-    avg_gap = sum(gaps) / len(gaps)
-    last_gap = gaps[-1]
+    elif attack_type == "dictionary":
+        gap = random.uniform(0.2, 1)
 
-    normalized_gap = last_gap / (avg_gap + 1e-5)
-else:
-    normalized_gap = 1
+    else:  # legit / replay
+        gap = random.uniform(1, 3)
 
+    base_time += gap
+    current_time = base_time
 
-# ----------------------------
-# ROLLING ATTEMPTS
-# ----------------------------
+    # ----------------------------
+    # TIME GAP NORMALIZATION
+    # ----------------------------
 
-rolling_window[user.user_id].append(auth_result["failed_attempts"])
-rolling_attempts = len(events)
+    login_history[user.user_id].append(current_time)
+    times = list(login_history[user.user_id])
 
+    if len(times) >= 2:
+        gaps = [times[i] - times[i-1] for i in range(1, len(times))]
+        avg_gap = sum(gaps) / len(gaps)
+        last_gap = gaps[-1]
 
-# ----------------------------
-# OTHER FEATURES
-# ----------------------------
+        normalized_gap = min(last_gap / (avg_gap + 1e-5), 5)
+    else:
+        normalized_gap = 1
 
-entropy = calculate_entropy(password) / 100
-failed_attempts = min(auth_result["failed_attempts"] / 5, 1)
-vulnerability = auth_result["vulnerability_score"]
-dictionary_flag = 1 if password in wordlist else 0
+    # ----------------------------
+    # ROLLING ATTEMPTS (FIXED)
+    # ----------------------------
 
+    rolling_window[user.user_id].append(auth_result["failed_attempts"])
+    rolling_attempts = sum(rolling_window[user.user_id])
 
-# ----------------------------
-# FINAL FEATURE VECTOR
-# ----------------------------
+    # ----------------------------
+    # FEATURES
+    # ----------------------------
 
-feature_vector = [
-    entropy,
-    failed_attempts,
-    vulnerability,
-    normalized_gap,   # 🔥 KEY CHANGE
-    rolling_attempts,
-    dictionary_flag
-]
+    entropy = calculate_entropy(password) / 100
+    failed_attempts = min(auth_result["failed_attempts"] / 5, 1)
+    vulnerability = auth_result["vulnerability_score"]
+    dictionary_flag = 1 if password in wordlist else 0
 
+    # Replay signal (simple heuristic)
+    replay_flag = 1 if attack_type == "replay" else 0
 
-# ----------------------------
-# ML PREDICTION
-# ----------------------------
+    # ----------------------------
+    # FEATURE VECTOR
+    # ----------------------------
 
-feature_df = pd.DataFrame([feature_vector], columns=[
-    "password_entropy",
-    "failed_attempts",
-    "vulnerability_score",
-    "time_gap",  # now normalized
-    "rolling_attempts",
-    "dictionary_flag"
-])
+    feature_vector = [
+        entropy,
+        failed_attempts,
+        vulnerability,
+        normalized_gap,
+        rolling_attempts,
+        dictionary_flag + replay_flag   # merged signal
+    ]
 
-risk_prob = model.predict_proba(feature_df)[0][1]
+    # ----------------------------
+    # PREDICTION
+    # ----------------------------
 
+    feature_df = pd.DataFrame([feature_vector], columns=[
+        "password_entropy",
+        "failed_attempts",
+        "vulnerability_score",
+        "time_gap",
+        "rolling_attempts",
+        "dictionary_flag"
+    ])
 
-# ----------------------------
-# ADAPTIVE DECISION
-# ----------------------------
+    risk_prob = model.predict_proba(feature_df)[0][1]
 
-decision = adaptive_decision(risk_prob)
-slow_attack = detect_slow_attack(user.user_id)
+    decision = adaptive_decision(risk_prob)
 
+    # ----------------------------
+    # LOGGING
+    # ----------------------------
 
-# ----------------------------
-# LOGGING
-# ----------------------------
+    event = {
+        "timestamp": int(current_time),
+        "user_id": user.user_id,
+        "attack_type": attack_type,
+        "risk_score": float(risk_prob),
+        "decision": decision
+    }
 
-event = {
-    "timestamp": int(current_time),
-    "user_id": user.user_id,
-    "attack_type": attack_type,
-    "risk_score": round(risk_prob, 3),
-    "decision": decision,
-    "slow_attack_detected": slow_attack
-}
+    log_event(event)
 
-log_event(event)
+    # ----------------------------
+    # OUTPUT
+    # ----------------------------
 
-
-# ----------------------------
-# OUTPUT
-# ----------------------------
-
-print("\nFINAL RESULT")
-print("User:", user.user_id)
-print("Attack Type:", attack_type)
-print("Risk Probability:", round(risk_prob, 3))
-print("Decision:", decision)
+    print("\n--- EVENT ---")
+    print("User:", user.user_id)
+    print("Attack:", attack_type)
+    print("Gap:", round(gap, 3))
+    print("Norm Gap:", round(normalized_gap, 3))
+    print("Features:", feature_vector)
+    print("Risk:", round(risk_prob, 3))
+    print("Decision:", decision)
