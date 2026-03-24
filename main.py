@@ -8,15 +8,31 @@ import csv
 # Configuration
 # ----------------------------
 
-TOTAL_EVENTS = 30
-LEGITIMATE_PROB = 0.6  # 60% normal traffic
+TOTAL_EVENTS = 100
+LEGITIMATE_PROB = 0.8  # 80% normal traffic
 
 # ----------------------------
 # Setup
 # ----------------------------
 
-print("Creating user...")
-user = User("alice", "admin123")
+print("Creating users...")
+users = [
+    User("alice", "admin123"),
+    User("bob", "Secure@456"),
+    User("charlie", "Qwerty@789"),
+    User("david", "StrongPass!99"),
+    User("eva", "letmein123"),
+    User("frank", "T!gerLily#2026"),
+    User("grace", "C0smic$Ray_88"),
+    User("henry", "BlueSky!7Clouds"),
+    User("isabel", "Quantum@Leap42"),
+    User("jack", "Sun&Moon_2025!"),
+    User("karen", "IronHorse#77$"),
+    User("leo", "Phoenix_Fire!123"),
+    User("mia", "OceanWave$456!"),
+    User("nathan", "Galaxy@Storm99"),
+    User("olivia", "ShadowWolf!2026")
+]
 
 print("Loading RockYou subset...")
 wordlist = load_rockyou("rockyou.txt", limit=10000)
@@ -24,7 +40,7 @@ print("Loaded", len(wordlist), "passwords.\n")
 
 all_events = []
 
-simulator = AttackSimulator(user, wordlist)
+simulator = AttackSimulator(users, wordlist)
 
 print("\n--- Simulating Mixed Login Traffic ---\n")
 

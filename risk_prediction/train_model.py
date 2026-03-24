@@ -2,7 +2,7 @@ import joblib
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, confusion_matrix
-from feature_extraction import extract_features
+from risk_prediction.feature_extraction import extract_features
 
 
 def train_model(X, y):

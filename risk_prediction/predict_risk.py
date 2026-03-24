@@ -2,7 +2,7 @@ import joblib
 
 def load_model():
 
-    model = joblib.load("trained_model.pkl")
+    model = joblib.load("risk_prediction/trained_model.pkl")
     return model
 
 

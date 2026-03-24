@@ -1,6 +1,6 @@
-from feature_extraction import extract_features
-from train_model import train_model
-from predict_risk import load_model
+from risk_prediction.feature_extraction import extract_features
+from risk_prediction.train_model import train_model
+from risk_prediction.predict_risk import load_model
 import pandas as pd
 
 # Load dataset
