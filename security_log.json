@@ -1,0 +1,8 @@
+{"attempt": 1, "user_id": "user123", "risk_score": 0.46, "decision": "CAPTCHA", "slow_attack_detected": false}
+{"attempt": 2, "user_id": "user123", "risk_score": 0.07, "decision": "ALLOW", "slow_attack_detected": false}
+{"attempt": 3, "user_id": "user123", "risk_score": 0.29, "decision": "ALLOW", "slow_attack_detected": false}
+{"attempt": 4, "user_id": "user123", "risk_score": 0.12, "decision": "ALLOW", "slow_attack_detected": false}
+{"attempt": 5, "user_id": "user123", "risk_score": 0.12, "decision": "ALLOW", "slow_attack_detected": false}
+{"attempt": 6, "user_id": "user123", "risk_score": 0.2, "decision": "ALLOW", "slow_attack_detected": true}
+{"attempt": 7, "user_id": "user123", "risk_score": 0.43, "decision": "CAPTCHA", "slow_attack_detected": true}
+{"attempt": 8, "user_id": "user123", "risk_score": 0.42, "decision": "CAPTCHA", "slow_attack_detected": true}
