@@ -10,6 +10,10 @@ try:
     data["risk_score"] = pd.to_numeric(data["risk_score"], errors="coerce")
     data = data.reset_index(drop=True)
 
+    # 🔥 REMOVE slow attack column (if it exists)
+    if "slow_attack_detected" in data.columns:
+        data = data.drop(columns=["slow_attack_detected"])
+
     st.write("### Login Events")
     st.dataframe(data)
 
